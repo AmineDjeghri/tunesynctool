@@ -15,6 +15,9 @@ from tunesynctool.models.configuration import Configuration
 @click.option('--subsonic-username', 'subsonic_username', help='Username for the Subsonic server.')
 @click.option('--subsonic-password', 'subsonic_password', help='Password for the Subsonic server.')
 @click.option('--subsonic-legacy-auth', 'subsonic_legacy_auth', help='Whether to enable legacy authentication for the Subsonic server.')
+@click.option('--subsonic-octo-fiesta-mode', 'subsonic_octo_fiesta_mode', is_flag=True, default=False, help='Enable octo-fiesta integration mode with retry logic for automatic downloads.')
+@click.option('--subsonic-octo-fiesta-retry-delay', 'subsonic_octo_fiesta_retry_delay', type=int, default=3, help='Delay in seconds between retry attempts when waiting for octo-fiesta downloads.')
+@click.option('--subsonic-octo-fiesta-max-retries', 'subsonic_octo_fiesta_max_retries', type=int, default=3, help='Maximum number of retry attempts when waiting for octo-fiesta downloads.')
 @click.option('--deezer-arl', 'deezer_arl', help='Deezer ARL token.')
 @click.option('--youtube-request-headers', 'youtube_request_headers', help='YouTube request headers.')
 @click.pass_context
@@ -28,6 +31,9 @@ def cli(
     subsonic_username: Optional[str],
     subsonic_password: Optional[str],
     subsonic_legacy_auth: Optional[bool],
+    subsonic_octo_fiesta_mode: bool,
+    subsonic_octo_fiesta_retry_delay: int,
+    subsonic_octo_fiesta_max_retries: int,
     deezer_arl: Optional[str],
     youtube_request_headers: Optional[str]
     ):
@@ -44,6 +50,9 @@ def cli(
         subsonic_username=subsonic_username,
         subsonic_password=subsonic_password,
         subsonic_legacy_auth=subsonic_legacy_auth,
+        subsonic_octo_fiesta_mode=subsonic_octo_fiesta_mode,
+        subsonic_octo_fiesta_retry_delay=subsonic_octo_fiesta_retry_delay,
+        subsonic_octo_fiesta_max_retries=subsonic_octo_fiesta_max_retries,
         deezer_arl=deezer_arl,
         youtube_request_headers=youtube_request_headers,
     )
