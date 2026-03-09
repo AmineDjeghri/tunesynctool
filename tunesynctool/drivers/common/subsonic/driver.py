@@ -1,4 +1,5 @@
 from typing import List, Optional
+import time
 
 from tunesynctool.exceptions import PlaylistNotFoundException, ServiceDriverException, TrackNotFoundException
 from tunesynctool.models import Playlist, Configuration, Track
@@ -186,6 +187,57 @@ class SubsonicDriver(ServiceDriver):
             return mapped_tracks
         except Exception as e:
             raise ServiceDriverException(e)
+    
+    def search_tracks_with_octo_fiesta_retry(self, query: str, limit: int = 10) -> List['Track']:
+        """
+        Enhanced search that uses octo-fiesta's global search and retries to allow downloads.
+        
+        When octo-fiesta mode is enabled, this method will:
+        1. Perform search3 (global search) which includes external provider results in octo-fiesta
+        2. If results found from external providers, wait for octo-fiesta to download them
+        3. Retry local search to find the downloaded tracks
+        4. Return results once tracks are available or max retries reached
+        
+        :param query: Search query string
+        :param limit: Maximum number of results to return
+        :return: List of found tracks
+        """
+        if not self._config.subsonic_octo_fiesta_mode:
+            return self.search_tracks(query=query, limit=limit)
+        
+        max_retries = self._config.subsonic_octo_fiesta_max_retries
+        retry_delay = self._config.subsonic_octo_fiesta_retry_delay
+        
+        # First try: use search3 (global search) which in octo-fiesta includes external providers
+        try:
+            response = self.__subsonic.search3(
+                query=query,
+                artistCount=0,
+                albumCount=0,
+                songCount=limit,
+            )
+            
+            # Check if we got results from search3
+            fetched_tracks = response.get('searchResult3', {}).get('song', [])
+            if fetched_tracks:
+                mapped_tracks = [self._mapper.map_track(track) for track in fetched_tracks]
+                for track in mapped_tracks:
+                    track.service_name = self.service_name
+                return mapped_tracks
+        except Exception:
+            pass
+        
+        # If search3 didn't work or no results, try search2 with retries
+        for attempt in range(max_retries + 1):
+            results = self.search_tracks(query=query, limit=limit)
+            
+            if results:
+                return results
+            
+            if attempt < max_retries:
+                time.sleep(retry_delay)
+        
+        return []
         
     def get_track_by_isrc(self, isrc: str) -> 'Track':
         raise NotImplementedError('Subsonic does not support fetching tracks by ISRC.')
