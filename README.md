@@ -54,6 +54,10 @@ tunesynctool \
 - Retries searches to find newly downloaded tracks
 - Configurable retry delays and attempts
 - Works with Deezer, Qobuz, and SquidWTF providers
+- For octo-fiesta to work properly with tunesynctool, you need to:
+    - Manually trigger initial downloads - Either by playing them once from a client, or by having octo-fiesta configured to auto-download search results
+    
+    - Launch tunesynctool with octo-fiesta mode enabled  
 
 **Optional parameters:**
 - `--subsonic-octo-fiesta-retry-delay <seconds>` - Delay between retries (default: 3)
