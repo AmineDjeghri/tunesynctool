@@ -137,11 +137,18 @@ class TrackMatcher:
                 limit = 50  # Title-only queries need more results
             else:
                 limit = 40  # Everything else
-                
-            search_results = self._target.search_tracks(
-                query=query,
-                limit=limit
-            )
+            
+            # Use octo-fiesta retry mechanism if available (for Subsonic targets)
+            if hasattr(self._target, 'search_tracks_with_octo_fiesta_retry'):
+                search_results = self._target.search_tracks_with_octo_fiesta_retry(
+                    query=query,
+                    limit=limit
+                )
+            else:
+                search_results = self._target.search_tracks(
+                    query=query,
+                    limit=limit
+                )
             
             # Add only unique tracks
             for result in search_results:
