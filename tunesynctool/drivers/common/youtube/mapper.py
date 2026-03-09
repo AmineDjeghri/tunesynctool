@@ -23,18 +23,57 @@ class YouTubeMapper(ServiceMapper):
         if isinstance(data, type(None)) or isinstance(additional_data, type(None)):
             raise ValueError('Input data or additional_data cannot be None')
         
-        album: dict = additional_data.get('album', {}) or {}
-        video_details: dict = data.get('videoDetails', {})
-        _raw_artists: List[dict] = additional_data.get('artists', [])
-        _artist_names = [artist.get('name', None) for artist in _raw_artists]
+        # YouTube API returns different structures:
+        # 1. Playlist tracks: {title, artists, videoId, album, duration, ...} directly
+        # 2. Song details: {videoDetails: {title, videoId, lengthSeconds, ...}, ...}
         
-        service_id = video_details.get('videoId', None)
-        title = video_details.get('title', None)
-
+        # Check if this is a song detail response (has videoDetails) or playlist track (direct fields)
+        video_details: dict = data.get('videoDetails', {})
+        is_song_detail = bool(video_details)
+        
+        # Extract metadata based on response structure
+        if is_song_detail:
+            # Song detail structure (from get_song)
+            service_id = video_details.get('videoId', None)
+            title = video_details.get('title', None)
+            duration_seconds = int(video_details.get('lengthSeconds', None)) if video_details.get('lengthSeconds', None) else None
+            
+            # Artists come from additional_data for song details
+            _raw_artists: List[dict] = additional_data.get('artists', [])
+            album: dict = additional_data.get('album', {}) or {}
+            release_year = int(additional_data.get('year')) if additional_data.get('year', None) else None
+        else:
+            # Playlist track structure (from get_playlist)
+            service_id = data.get('videoId', None)
+            title = data.get('title', None)
+            
+            # Duration can be in seconds or as duration_seconds
+            duration = data.get('duration_seconds') or data.get('duration')
+            if duration:
+                # If duration is a string like "3:45", convert to seconds
+                if isinstance(duration, str) and ':' in duration:
+                    parts = duration.split(':')
+                    if len(parts) == 2:
+                        duration_seconds = int(parts[0]) * 60 + int(parts[1])
+                    elif len(parts) == 3:
+                        duration_seconds = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+                    else:
+                        duration_seconds = None
+                else:
+                    duration_seconds = int(duration) if duration else None
+            else:
+                duration_seconds = None
+            
+            # Artists come from data for playlist tracks
+            _raw_artists: List[dict] = data.get('artists', [])
+            album: dict = data.get('album', {}) or {}
+            release_year = int(data.get('year')) if data.get('year', None) else None
+        
+        # Extract artist names
+        _artist_names = [artist.get('name', None) for artist in _raw_artists] if _raw_artists else []
+        
         album_name = album.get('name', None)
         primary_artist = _artist_names[0] if len(_artist_names) > 0 else None
-        duration_seconds = int(video_details.get('lengthSeconds', None)) if video_details.get('lengthSeconds', None) else None
-        release_year = int(additional_data.get('year')) if additional_data.get('year', None) else None
         
         track_number = None # Youtube does not provide track numbers as far as I know
         isrc = None # Youtube does not provide ISRCs as far as I know
