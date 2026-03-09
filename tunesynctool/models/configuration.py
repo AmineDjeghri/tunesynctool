@@ -62,6 +62,22 @@ class Configuration:
     Enable legacy auth for Subsonic server. Required for some servers to authenticate.
     """
 
+    subsonic_octo_fiesta_mode: bool = field(default=False)
+    """
+    Enable octo-fiesta integration mode. When enabled, the Subsonic driver will retry searches
+    with delays to allow octo-fiesta to download tracks that aren't in the local library.
+    """
+
+    subsonic_octo_fiesta_retry_delay: int = field(default=3)
+    """
+    Delay in seconds between retry attempts when waiting for octo-fiesta downloads.
+    """
+
+    subsonic_octo_fiesta_max_retries: int = field(default=3)
+    """
+    Maximum number of retry attempts when waiting for octo-fiesta downloads.
+    """
+
     deezer_arl: Optional[str] = field(default=None)
     """
     Deezer ARL token. Required for Deezer API access.
@@ -89,6 +105,9 @@ class Configuration:
                 subsonic_username=os.getenv("SUBSONIC_USERNAME"),
                 subsonic_password=os.getenv("SUBSONIC_PASSWORD"),
                 subsonic_legacy_auth=os.getenv("SUBSONIC_LEGACY_AUTH", False),
+                subsonic_octo_fiesta_mode=os.getenv("SUBSONIC_OCTO_FIESTA_MODE", "false").lower() == "true",
+                subsonic_octo_fiesta_retry_delay=int(os.getenv("SUBSONIC_OCTO_FIESTA_RETRY_DELAY", cls.subsonic_octo_fiesta_retry_delay)),
+                subsonic_octo_fiesta_max_retries=int(os.getenv("SUBSONIC_OCTO_FIESTA_MAX_RETRIES", cls.subsonic_octo_fiesta_max_retries)),
                 deezer_arl=os.getenv("DEEZER_ARL"),
                 youtube_request_headers=os.getenv("YOUTUBE_REQUEST_HEADERS")
             )
